@@ -17,6 +17,8 @@ from config import SECRET_CHANNEL_TO_NEWS
 
 ##Стоп лист для произведений вида: айди: [произведение1, произведение2, произведение3, ...]
 stop_list_compositions = {}
+
+##Тоже стоп-лист, только с новостями на сервере
 last_news  = {}
 
 ##Класс ответственный за контроль диалога (Надстройка над классом Compositions);
@@ -79,9 +81,9 @@ async def on_message(message):
         last_news[message.guild.id] = [new["title"]]
 
         ##Составляем Embed
-        embed = discord.Embed(title=new["title"], description=new["content"], colour=discord.Color.gold())
+        embed = discord.Embed(title=new["title"], url=new["post_url"], description=new["content"], colour=discord.Color.gold())
         embed.set_image(url=new["image_url"])
-        embed.set_footer(text=f"{new['date_time']} | {new['post_url']}")
+        embed.set_footer(text=new["date_time"])
 
         ##Берём канал по имени
         channel = discord.utils.get(message.guild.channels, name=SECRET_CHANNEL_TO_NEWS)
@@ -384,9 +386,9 @@ async def new_hoi4(ctx, *, index_new=None):
                 new = news[-1]
 
         ##Составляем Embed
-        embed = discord.Embed(title=new["title"], description=new["content"], colour=discord.Color.gold())
+        embed = discord.Embed(title=new["title"], url=new["post_url"], description=new["content"], colour=discord.Color.gold())
         embed.set_image(url=new["image_url"])
-        embed.set_footer(text=f"{new['date_time']} | {new['post_url']}")
+        embed.set_footer(text=new["date_time"])
         
         await ctx.send(embed=embed)
 
