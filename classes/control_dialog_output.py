@@ -1,61 +1,87 @@
 from classes.manage_compositions import Compositions
 from config import all_compositions_verses, all_compositions_poems, all_compositions_pieces
-from config import LIMIT
+from config import LIMIT, EMBED_LIMIT
 import discord
+import sqlite3
+from config import TABLE_NAME
+
+Compositions = Compositions()
 
 class ControlDialog:
 
 	##Метод отсылки пользователю если он только зашёл на сервер
 	def msg_on_join(self):
 		name = "С товарищеским приветом, Маяковский"
-		composition_title, composition_text, composition_name = Compositions().search_by_name(name, amount=LIMIT, find_verse=True)
+		composition_title, composition_text, composition_name = Compositions.search_by_name(name, amount=LIMIT, find_verse=True)
 
 		return (composition_title, composition_text, composition_name)
 
 	##Метод отсылки пользователю если он выходит с сервера
 	def msg_on_remove(self):
 		name = "Прощанье"
-		composition_title, composition_text, composition_name = Compositions().search_by_name(name, amount=LIMIT, find_verse=True)
+		composition_title, composition_text, composition_name = Compositions.search_by_name(name, amount=LIMIT, find_verse=True)
 
 		return (composition_title, composition_text, composition_name)
 
-	##Метод отсылки стихотворения в личные сообщения
-	def verse_in_private_messages(self):
-		composition_title, composition_text, composition_name = Compositions().random_composition(all_compositions=all_compositions_verses, find_verse=True)
+	##Найти случайное произведение
+	def find_random_composition(self, find_verse=False, find_poem=False, find_piece=False, stop_list=[]):
+		composition_title, composition_text = Compositions.random_composition_json(find_verse=find_verse, find_poem=find_poem, find_piece=find_piece)
 
-		file_composition = None
-	    ##Проверка на переполнение LIMIT суммы текста и названия стиха
-		if len(composition_text) + len(composition_title) + 50 >= LIMIT:
-			file_composition = discord.File(f"Произведения/Стихи/{composition_name}")
-			
-		return (composition_title, composition_text, composition_name, file_composition)
+		file_composition = (None, None)
+		##Если содержимое для сообщения более лимита (4050 символов)
+		if len(composition_title) + len(composition_text) + 50 >= EMBED_LIMIT:
+			try:
+				with open(f"safety_area/{composition_title}.txt", "w", encoding="utf-8") as file:
+					file.write(composition_text)
+			except:
+				with open(f"safety_area/{composition_title}.txt", "w", encoding="cp1251") as file:
+					file.write(composition_text)
 
-	##Найти случайный стих
-	def find_random_verse(self):
-		composition_title, composition_text, composition_name = Compositions().random_composition(all_compositions=all_compositions_verses, amount=LIMIT, find_verse=True)
+			file_composition = (discord.File(f"safety_area/{composition_title}.txt"), f"safety_area/{composition_title}.txt")
 
-		file_composition = None
-		if len(composition_text) + len(composition_title) + 50 >= LIMIT:
-			file_composition = discord.File(f"Произведения/Стихи/{composition_name}")
+		##Возвращаем название, текст и файл (на файл проверка внутри bot.py присутствует)
+		return (composition_title, composition_text, file_composition)
 
-		return (composition_title, composition_text, composition_name, file_composition)
+	##Найти произведение по названию
+	def find_composition_by_name(self, composition_name_from_user: str, stop_list: list=[]) -> tuple:
+		composition_title, composition_text, file_composition = Compositions.composition_by_name(composition_name_from_user, stop_list=stop_list)
+		return (composition_title, composition_text, file_composition)
 
-	##Найти случайную поэму
-	def find_random_poem(self):
-		composition_title, composition_text, composition_name = Compositions().random_composition(all_compositions=all_compositions_poems, amount=LIMIT, find_poem=True)
+	##Добавить произведение в стоп-лист
+	@staticmethod
+	def add_composition_to_stop_list(composition_name: str, stop_list: list):
+		
+		##Если стоп-лист не достиг максимальной своей длины - добавим в него произведение; Иначе - очистим стоп-лист
+		if len(stop_list) < 2:
+			stop_list.append(composition_name) ##Добавляем произведение в стоп-лист
+		else:
+			stop_list = []
 
-		file_composition = None
-		if len(composition_text) + len(composition_title) + 50 >= LIMIT:
-			file_composition = discord.File(f"Произведения/Поэмы/{composition_name}")
+		##Возвращаем стоп-лист
+		return stop_list
 
-		return (composition_title, composition_text, composition_name, file_composition)
+	##Последняя новость в БД
+	@staticmethod
+	def get_last_new():
+		with sqlite3.connect("data.db") as db:
+			db.row_factory = sqlite3.Row
+			cursor = db.cursor()
 
-	##Найти случайную пьесу
-	def find_random_piece(self):
-		composition_title, composition_text, composition_name = Compositions().random_composition(all_compositions=all_compositions_pieces, amount=LIMIT, find_piece=True)
+			news = cursor.execute(f"SELECT * FROM {TABLE_NAME}")
+			new = cursor.fetchall()[0]
 
-		file_composition = None
-		if len(composition_text) + len(composition_title) + 50 >= LIMIT:
-			file_composition = discord.File(f"Произведения/Пьесы/{composition_name}")
+			date = new["date_time"]
+			title = new["title"]
+			content = new["content"]
+			post_url = new["post_url"]
+			image_url = new["image_url"]
 
-		return (composition_title, composition_text, composition_name, file_composition)
+			new = {
+				"date_time": date,
+				"title": title,
+				"content": content,
+				"post_url": post_url,
+				"image_url": image_url
+			}
+
+			return new
