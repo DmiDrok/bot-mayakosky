@@ -89,7 +89,7 @@ async def on_message(message):
         try:
             await channel.send(embed=embed)
         except AttributeError:
-            print(f"На сервере {message.guild.name} нет канала {SECRET_CHANNEL_TO_NEWS}.")
+            print(f"На сервере \"{message.guild.name}\" нет канала {SECRET_CHANNEL_TO_NEWS}.")
 
 
     ##Для реагирования на команды
