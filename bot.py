@@ -277,8 +277,12 @@ async def ban(ctx, member: discord.Member=None, time_to_ban=None, *, reason=None
     #if not ctx.author.guild_permissions.administrator:
         #await ctx.send(f"{ctx.author.mention} - необходимо обладать правами администратора.")
 
-    if time_to_ban != None:
-        time_to_ban = int(re.findall(r"\d+", time_to_ban)[0]) if len(int(re.findall(r"\d+", time_to_ban)[0])) > 0 else None
+    #if time_to_ban != None:
+        #time_to_ban = re.findall(r"\d[+-*/]+", time_to_ban)
+        #if len(time_to_ban) > 0:
+            #time_to_ban = int(eval(time_to_ban[0]))
+        #else:
+            #time_to_ban = None
 
     ##Если пользователь не указал кого банить
     if member == None:
@@ -291,10 +295,10 @@ async def ban(ctx, member: discord.Member=None, time_to_ban=None, *, reason=None
         time_to_ban_display = None ##С помощью этой переменной будем уведомлять в embed о длительности бана
         ##Если время бана не указано - бан перманентный
         if time_to_ban == None:
-            time_to_ban_display = "Время бана - неограниченное кол-во времени."
+            time_to_ban_display = "неограниченное кол-во времени."
         else:
             ##Если время бана было указано - ставим его в причину
-            time_to_ban = int(time_to_ban) if time_to_ban.isdigit() else "неограниченное кол-во времени"
+            time_to_ban = eval(time_to_ban) if str(eval(time_to_ban)).isdigit() else "неограниченное кол-во времени"
             time_to_ban_display = f"Время бана - {time_to_ban} секунд."
 
         ##Баним пользователя

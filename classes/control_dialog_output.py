@@ -12,14 +12,14 @@ class ControlDialog:
 	##Метод отсылки пользователю если он только зашёл на сервер
 	def msg_on_join(self):
 		name = "С товарищеским приветом, Маяковский"
-		composition_title, composition_text, composition_name = Compositions.search_by_name(name, amount=LIMIT, find_verse=True)
+		composition_title, composition_text, composition_name = Compositions.composition_by_name(name)
 
 		return (composition_title, composition_text, composition_name)
 
 	##Метод отсылки пользователю если он выходит с сервера
 	def msg_on_remove(self):
 		name = "Прощанье"
-		composition_title, composition_text, composition_name = Compositions.search_by_name(name, amount=LIMIT, find_verse=True)
+		composition_title, composition_text, composition_name = Compositions.composition_by_name(name)
 
 		return (composition_title, composition_text, composition_name)
 
