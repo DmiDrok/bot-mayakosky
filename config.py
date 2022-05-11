@@ -9,7 +9,7 @@ EMBED_LIMIT = 4050
 TABLE_NAME = "game_news"
 
 ##Секретный канал для отправки новостей
-SECRET_CHANNEL_TO_NEWS = "новости-hoi4"
+SECRET_CHANNEL_TO_NEWS = ["новости-hoi4", "новости-хой4"]
 
 ##Список всех стихотворений из папки 'Стихи'
 all_compositions_verses = os.listdir("Произведения/Стихи/")

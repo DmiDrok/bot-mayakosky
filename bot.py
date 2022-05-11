@@ -62,36 +62,49 @@ async def on_member_remove(member: discord.User):
 @bot.event
 async def on_message(message):
 
-    ##Если у гильдии нет стоп-листа - добавляем и присваиваем пустой список
-    if message.guild.id not in stop_list_compositions:
-        stop_list_compositions[message.guild.id] = []
+    print(message.author.id)
+    ##Всё в try-except для того, чтобы пользователь мог писать в ЛС боту.
+    try:
+        ##Если у гильдии нет стоп-листа - добавляем и присваиваем пустой список
+        if message.guild.id not in stop_list_compositions:
+            stop_list_compositions[message.guild.id] = []
+    except: ##Сработает если пользователь пишет боту в ЛС.
+        if message.author.id not in stop_list_compositions:
+            stop_list_compositions[message.author.id] = []
 
-    ##Если айди гильдии нет в ключах последней новости
-    if message.guild.id not in last_news:
-        last_news[message.guild.id] = []
+    try:
+        ##Если айди гильдии нет в ключах последней новости
+        if message.guild.id not in last_news:
+            last_news[message.guild.id] = []
 
-    if Controller.get_last_new()["title"] not in last_news[message.guild.id]:
-        ##Получаем последнюю новость
-        new = Controller.get_last_new()
+        if Controller.get_last_new()["title"] not in last_news[message.guild.id]:
+            ##Получаем последнюю новость
+            new = Controller.get_last_new()
 
-        ##Записываем последнюю новость в список последних
-        last_news[message.guild.id].append(new["title"])
+            ##Записываем последнюю новость в список последних
+            last_news[message.guild.id].append(new["title"])
 
-        ##Заносим в список уже бывших новостей
-        last_news[message.guild.id] = [new["title"]]
+            ##Заносим в список уже бывших новостей
+            last_news[message.guild.id] = [new["title"]]
 
-        ##Составляем Embed
-        embed = discord.Embed(title=new["title"], url=new["post_url"], description=new["content"], colour=discord.Color.gold())
-        embed.set_image(url=new["image_url"])
-        embed.set_footer(text=new["date_time"])
+            ##Составляем Embed
+            embed = discord.Embed(title=new["title"], url=new["post_url"], description=new["content"], colour=discord.Color.gold())
+            embed.set_image(url=new["image_url"])
+            embed.set_footer(text=new["date_time"])
 
-        ##Берём канал по имени
-        channel = discord.utils.get(message.guild.channels, name=SECRET_CHANNEL_TO_NEWS)
-        ##Отправляем Embed
-        try:
-            await channel.send(embed=embed)
-        except AttributeError:
-            print(f"На сервере \"{message.guild.name}\" нет канала {SECRET_CHANNEL_TO_NEWS}.")
+            ##Берём канал по имени
+            try:
+                channel = discord.utils.get(message.guild.channels, name=SECRET_CHANNEL_TO_NEWS[0])
+            except:
+                channel = discord.utils.get(message.guild.channels, name=SECRET_CHANNEL_TO_NEWS[1])
+                
+            ##Отправляем Embed
+            try:
+                await channel.send(embed=embed)
+            except AttributeError:
+                print(f"На сервере \"{message.guild.name}\" нет канала новостного канала.")
+    except:
+        pass
 
 
     ##Для реагирования на команды
@@ -100,13 +113,22 @@ async def on_message(message):
 ##Отправка стиха в лс
 @bot.command()
 async def composition_verse_me(ctx):
-    composition_title, composition_text, composition_name, file_composition = Controller.find_random_verse()
+
+    ##Отправляем пользователю в лс, поэтому делаем стоп-лист для лс - если его нет - делаем пустой список (пустой стоп-лист)
+    if ctx.author.id not in stop_list_compositions:
+        stop_list_compositions[ctx.author.id] = []
+
+    ##Формируем название, текст, имя файла
+    composition_title, composition_text, file_composition = Controller.find_random_composition(find_verse=True, stop_list=stop_list_compositions[ctx.author.id])
 
     ##Если есть файл - отсылаем с файлом
-    if file_composition != None:
-        await ctx.author.send(f"{composition_title}", file=file_composition)
+    if file_composition[0] != None:
+        composition_text = composition_text[0:EMBED_LIMIT-100] + "...\n\n---Полностью см. в файле. (снизу)---\n\n"
+        embed = discord.Embed(title=f"{composition_title}", colour=discord.Color.red(), description=f"{composition_text}")
+        ctx.author.send(embed=embed)
     else:
-        await ctx.author.send(f"{composition_title}\n```{composition_text}```")
+        embed = discord.Embed(title=f"{composition_title}", colour=discord.Color.red(), description=f"{composition_text}")
+        await ctx.author.send(embed=embed)
     
 ##Команда с информацией о боте
 @bot.command()
@@ -128,7 +150,7 @@ async def info(ctx, dop=None):
         emb.add_field(name=f"{PREFIX}ban -@имя участника- [-время бана-] [-причина бана-]", value="Бан участника на сервере", inline=False)
         emb.add_field(name=f"{PREFIX}unban -@имя участника-", value="Разбан участника на сервере.", inline=False)
         emb.add_field(name=f"{PREFIX}roll -min- -max-", value="Случайное число от -min- до -max-", inline=False)
-        emb.set_footer(text="Сайт с подобными ботами: https://ru-poets-discord/")
+        emb.set_footer(text="Сайт бота: https://... (В разработке).")
 
     ##Отправляем нашу информацию
     await ctx.send(embed=emb)
@@ -139,7 +161,7 @@ async def composition(ctx, *, type_composition=None):
 
     file_composition = None
     ##Ветка стихов: Если пользователь ничего не указал или указал стихи - ищем по умолчанию стихи
-    if type_composition == None or len(re.findall(r"с[дт]?[ие]х?", type_composition)) > 0:
+    if type_composition == None or len(re.findall(r"с[дт][ие]х?", type_composition)) > 0:
         #composition_title, composition_text, file_composition = Controller.find_random_composition(find_verse=True)
         await composition_verse(ctx)
     else: ##Иначе - перебираем все остальные варианты
@@ -158,7 +180,11 @@ async def composition(ctx, *, type_composition=None):
 @bot.command()
 async def composition_by_name(ctx, *, composition_name_from_user):
 
-    composition_title, composition_text, file_composition = Controller.find_composition_by_name(composition_name_from_user, stop_list=stop_list_compositions[ctx.guild.id])
+    ##Если пользователь пишет в лс - попадём в ветку от except и вставим стоп-лист от пользователя, а не от сервера
+    try:
+        composition_title, composition_text, file_composition = Controller.find_composition_by_name(composition_name_from_user, stop_list=stop_list_compositions[ctx.guild.id])
+    except:
+        composition_title, composition_text, file_composition = Controller.find_composition_by_name(composition_name_from_user, stop_list=stop_list_compositions[ctx.author.id])
 
     ##Если файл есть - отправляем файл
     if file_composition != None:
@@ -177,7 +203,10 @@ async def composition_by_name(ctx, *, composition_name_from_user):
 @bot.command()
 async def composition_verse(ctx):
 
-    composition_title, composition_text, file_composition = Controller.find_random_composition(find_verse=True, stop_list=stop_list_compositions[ctx.guild.id])
+    try:
+        composition_title, composition_text, file_composition = Controller.find_random_composition(find_verse=True, stop_list=stop_list_compositions[ctx.guild.id])
+    except:
+        composition_title, composition_text, file_composition = Controller.find_random_composition(find_verse=True, stop_list=stop_list_compositions[ctx.author.id])
 
     ##В Эмбеде максимум символов - 4096 (4050 в config.py)
     if file_composition[0] != None:
@@ -190,13 +219,21 @@ async def composition_verse(ctx):
         await ctx.send(embed=embed)
 
     ##Добавляем произведение в стоп-лист
-    stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.guild.id])
+    try:
+        stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.guild.id])
+    except: ##Попадём сюда если пользователь пишет боту в ЛС.
+        stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.author.id])
+
 
 ##Случайная поэма
 @bot.command()
 async def composition_poem(ctx):
 
-    composition_title, composition_text, file_composition = Controller.find_random_composition(find_poem=True, stop_list=stop_list_compositions[ctx.guild.id])
+    ##Если пользователь пишет в лс - попадём в ветку от except и вставим стоп-лист от пользователя, а не от сервера
+    try:
+        composition_title, composition_text, file_composition = Controller.find_random_composition(find_poem=True, stop_list=stop_list_compositions[ctx.guild.id])
+    except:
+        composition_title, composition_text, file_composition = Controller.find_random_composition(find_poem=True, stop_list=stop_list_compositions[ctx.author.id])
 
     ##Если файл есть - отправляем с файлом
     if file_composition[0] != None:
@@ -209,13 +246,21 @@ async def composition_poem(ctx):
         await ctx.send(embed=embed)
 
     ##Добавляем произведение в стоп-лист
-    stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.guild.id])
+    try:
+        stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.guild.id])
+    except: ##Попадём сюда если пользователь пишет боту в ЛС.
+        stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.author.id])
+
 
 ##Случайная пьеса
 @bot.command()
 async def composition_piece(ctx):
 
-    composition_title, composition_text, file_composition = Controller.find_random_composition(find_piece=True, stop_list=stop_list_compositions[ctx.guild.id])
+    ##Если пользователь пишет в лс - попадём в ветку от except и вставим стоп-лист от пользователя, а не от сервера
+    try:
+        composition_title, composition_text, file_composition = Controller.find_random_composition(find_piece=True, stop_list=stop_list_compositions[ctx.guild.id])
+    except:
+        composition_title, composition_text, file_composition = Controller.find_random_composition(find_piece=True, stop_list=stop_list_compositions[ctx.author.id])
 
     ##Если файл есть - отправляем с файлом
     if file_composition[0] != None:
@@ -228,14 +273,18 @@ async def composition_piece(ctx):
         await ctx.send(embed=embed)
 
     ##Добавляем произведение в стоп-лист
-    stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.guild.id])
+    try:
+        stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.guild.id])
+    except: ##Попадём сюда если пользователь пишет боту в ЛС.
+        stop_list_compositions[ctx.guild.id] = Controller.add_composition_to_stop_list(composition_title, stop_list=stop_list_compositions[ctx.author.id])
+
 
 ##Очистка чата
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def clear(ctx, how_msg=2):
 
-    MAX = 20
+    MAX = 50 ##Максимум сообщений для очистки
 
     ##Если пользователь не указал сколько сообщений очистить
     if how_msg == None:

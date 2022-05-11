@@ -25,6 +25,10 @@ class Compositions:
             key_composition = "Поэмы"
         elif find_piece == True:
             key_composition = "Пьесы"
+        
+        ##Если ничего не было указано из параметров в True - ищем стихи    
+        else:
+            key_composition = "Стихи"
 
         ##Если указан тип композиции
         if key_composition != None:
@@ -35,14 +39,12 @@ class Compositions:
             while random_verse_title in stop_list:
                 random_verse_title = random.choice(tuple(enumerate(self.all_compositions_json[key_composition])))[1]
                 random_verse_text = self.all_compositions_json[key_composition][random_verse_title]
-            
-
 
             ##Возвращаем название произведения и его текст
             return (random_verse_title, random_verse_text)
 
     ##Найти произведение по названию
-    def composition_by_name(self, composition_name_from_user, stop_list=[]):
+    def composition_by_name(self, composition_name_from_user, stop_list=[], again=False):
         composition_name_from_user_arr = composition_name_from_user.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip().split(" ")
         composition_key_from_user = composition_name_from_user[0].upper() + composition_name_from_user[1::].lower() ##Ключ - первая буква заглавная - все остальные малые (не идеальный, но на некоторые произведения действительно срабатывает)
 
@@ -112,9 +114,11 @@ class Compositions:
                     return (composition_name_correctly, composition_text, file_composition)
 
         ##Если произведение не было найдено до сих пор - чистим стоп лист и перезываем метод поиска
-        if composition_name_correctly == None:
+        if composition_name_correctly == None and again == False:
             stop_list = []
-            self.composition_by_name(composition_name_from_user, stop_list=stop_list)
+            self.composition_by_name(composition_name_from_user, stop_list=stop_list, again=True)
+        elif composition_name_correctly != None and again == True:
+            self.random_composition_json(find_verse=True, stop_list=[])
 
         ##Возвращаем название, текст и файл произведения
         return (composition_name_correctly, composition_text, file_composition)
