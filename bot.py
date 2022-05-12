@@ -62,7 +62,6 @@ async def on_member_remove(member: discord.User):
 @bot.event
 async def on_message(message):
 
-    print(message.author.id)
     ##Всё в try-except для того, чтобы пользователь мог писать в ЛС боту.
     try:
         ##Если у гильдии нет стоп-листа - добавляем и присваиваем пустой список
@@ -161,16 +160,16 @@ async def composition(ctx, *, type_composition=None):
 
     file_composition = None
     ##Ветка стихов: Если пользователь ничего не указал или указал стихи - ищем по умолчанию стихи
-    if type_composition == None or len(re.findall(r"с[дт][ие]х?", type_composition)) > 0:
+    if type_composition == None or len(re.findall(r"с[дт][ие]х?|verses?", type_composition)) > 0:
         #composition_title, composition_text, file_composition = Controller.find_random_composition(find_verse=True)
         await composition_verse(ctx)
     else: ##Иначе - перебираем все остальные варианты
 
         ##Ветка поэмы: Если пользователь ввёл поэму
-        if len(re.findall(r"п[ао]е?м?а?", type_composition)) > 0:
+        if len(re.findall(r"п[ао]е?м?а?|poem", type_composition)) > 0:
             await composition_poem(ctx)
         ##Ветка пьесы: Если пользователь ввёл в type_composition 'пьеса'
-        elif len(re.findall(r"п[ьъ]?е[сз]?а?", type_composition)) > 0:
+        elif len(re.findall(r"п[ьъ]?е[сз]?а?|piece", type_composition)) > 0:
             await composition_piece(ctx)
         ##Ветка с введённым пользователем произведением
         else:

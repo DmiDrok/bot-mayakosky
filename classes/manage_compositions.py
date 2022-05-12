@@ -61,7 +61,6 @@ class Compositions:
                 for i in composition_name_from_user_arr:
                     if i in key.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip().split():
                         if key.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip().split().index(i) == key.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip().split().index(key.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip().split()[-1]):
-                            print("Я ТУТ0")
                             composition_name_correctly = key
                             composition_text = self.all_compositions_json[type_composition][key]
 
@@ -69,7 +68,6 @@ class Compositions:
                                 file_composition = self.__CreateFile(composition_name_correctly, composition_text)
 
                             return (composition_name_correctly, composition_text, file_composition)
-                            continue
                     else:
                         break
 
@@ -88,27 +86,29 @@ class Compositions:
 
         ##Ищем среди всех произведений
         for key in ["Стихи", "Поэмы", "Пьесы"]:
-            for composition_name_correctly in self.all_compositions_json[key]:
-                if self.__IsAlike(composition_name_correctly.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip(), composition_name_from_user.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip()) == True and composition_name_correctly not in stop_list: ##Если есть схожесть в введённом названии от пользователя и настоящем названии произведения
+            for composition_name in self.all_compositions_json[key]:
+                if self.__IsAlike(composition_name.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip(), composition_name_from_user.lower().replace("!", "").replace("?", "").replace(".", "").replace(",", "").strip()) == True and composition_name_correctly not in stop_list: ##Если есть схожесть в введённом названии от пользователя и настоящем названии произведения
                     
-                    composition_text = self.all_compositions_json[key][composition_name_correctly]
+                    composition_name_correctly = composition_name
+                    composition_text = self.all_compositions_json[key][composition_name]
                     
                     ##Если длина контента превышает максимальную вместимость Эмбеда - делаем файл и отсылаем его далее
                     if len(composition_name_correctly) + len(self.all_compositions_json[key][composition_name_correctly]) >= EMBED_LIMIT\
                     or composition_key_from_user in self.all_compositions_json[key]:
-                        file_composition = self.__CreateFile(composition_name_correctly, composition_text)
+                        file_composition = self.__CreateFile(composition_name, composition_text)
 
                     return (composition_name_correctly, composition_text, file_composition)
 
         ##Сюда мы попадём если произведение до сих пор не было найдено
         for key in ["Стихи", "Поэмы", "Пьесы"]:
-            for composition_name_correctly in self.all_compositions_json[key]:
-                if composition_name_from_user.lower()[0] == composition_name_correctly.lower()[0] and composition_name_correctly not in stop_list:
+            for composition_name in self.all_compositions_json[key]:
+                if composition_name_from_user.lower()[0] == composition_name.lower()[0] and composition_name not in stop_list:
                     
-                    composition_text = self.all_compositions_json[key][composition_name_correctly]
+                    composition_name_correctly = composition_name
+                    composition_text = self.all_compositions_json[key][composition_name]
 
                     ##Если длина контента превышает максимальную вместимость Эмбеда
-                    if len(composition_name_correctly) + len(self.all_compositions_json[key][composition_name_correctly]) >= EMBED_LIMIT:
+                    if len(composition_name_correctly) + len(self.all_compositions_json[key][composition_name]) >= EMBED_LIMIT:
                         file_composition = self.__CreateFile(composition_name_correctly, composition_text)
 
                     return (composition_name_correctly, composition_text, file_composition)
@@ -116,9 +116,12 @@ class Compositions:
         ##Если произведение не было найдено до сих пор - чистим стоп лист и перезываем метод поиска
         if composition_name_correctly == None and again == False:
             stop_list = []
-            self.composition_by_name(composition_name_from_user, stop_list=stop_list, again=True)
-        elif composition_name_correctly != None and again == True:
-            self.random_composition_json(find_verse=True, stop_list=[])
+            return self.composition_by_name(composition_name_from_user, stop_list=stop_list, again=True)
+        elif composition_name_correctly == None and again == True:
+            composition_name_correctly, composition_text = self.random_composition_json(find_verse=True, stop_list=[])
+
+            if len(composition_name_correctly) + len(composition_text) >= EMBED_LIMIT:
+                file_composition = self.__CreateFile(composition_name_correctly, composition_text)
 
         ##Возвращаем название, текст и файл произведения
         return (composition_name_correctly, composition_text, file_composition)

@@ -45,6 +45,7 @@ class ControlDialog:
 	##Найти произведение по названию
 	def find_composition_by_name(self, composition_name_from_user: str, stop_list: list=[]) -> tuple:
 		composition_title, composition_text, file_composition = Compositions.composition_by_name(composition_name_from_user, stop_list=stop_list)
+		
 		return (composition_title, composition_text, file_composition)
 
 	##Добавить произведение в стоп-лист
