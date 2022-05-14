@@ -102,7 +102,7 @@ async def on_message(message):
             try:
                 await channel.send(embed=embed)
             except AttributeError:
-                print(f"На сервере \"{message.guild.name}\" нет канала новостного канала.")
+                print(f"На сервере \"{message.guild.name}\" нет новостного канала.")
     except:
         pass
 
@@ -149,6 +149,8 @@ async def info(ctx, dop=None):
         emb.add_field(name=f"{PREFIX}kick -@имя участника- [-причина кика-]", value="Кик участника с сервера.", inline=False)
         emb.add_field(name=f"{PREFIX}ban -@имя участника- [-время бана-] [-причина бана-]", value="Бан участника на сервере", inline=False)
         emb.add_field(name=f"{PREFIX}unban -@имя участника-", value="Разбан участника на сервере.", inline=False)
+        emb.add_field(name=f"{PREFIX}mute -@имя участника- -n-", value="Мут участника на -n- секунд.")
+        emb.add_field(name=f"{PREFIX}unmute -@имя участника-", value="Размут участника на сервере.", inline=False)
         emb.add_field(name=f"{PREFIX}roll -min- -max-", value="Случайное число от -min- до -max-", inline=False)
         emb.set_footer(text=f"Сайт бота: {SITE}")
 
@@ -391,6 +393,67 @@ async def unban(ctx, *, member: discord.User=None):
             ##Отсылаем Embed
             await ctx.send(embed=embed)
 
+##Мут участника на сервере
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def mute(ctx, member: discord.Member=None, *, time=None):
+
+    ##Если участник не указал кого мутить
+    if member == None:
+        await ctx.reply(f"{ctx.author.mention} - не указал участника для мута.")
+    else:
+        ##Если участник не указал время
+        time_display = None ##Время которое мы покажем в Embed'е
+        if time == None:
+            time_display = "Неограниченное кол-во времени."
+        else:
+            time_display = f"{eval(time)} секунд."
+
+        ##Получаем мутную роль и отдаём её участнику
+        muted_role = discord.utils.get(ctx.guild.roles, name="Mute")
+
+        ##Если на сервере нет такой роли
+        if muted_role == None:
+            muted_role = await ctx.guild.create_role(name="Mute")
+
+        await member.add_roles(muted_role) ##Присваиваем мутную роль пользователю
+
+        ##Для всех каналов - делаем запрет на письмо в них мутной роли
+        for channel in ctx.guild.channels:
+            await channel.set_permissions(muted_role, speak=False, send_messages=False)
+
+        ##Составляем embed
+        embed = discord.Embed(colour=discord.Color.red())
+        embed.add_field(name="Что произошло?", value=f"{ctx.author.mention} замутил {member.mention}", inline=False)
+        embed.add_field(name="Время мута:", value=f"{time_display}", inline=False)
+
+        await ctx.send(embed=embed)
+
+        ##Если было указано время - спим, а потом убираем мут
+        if time != None:
+            ##Спим указанное время
+            await asyncio.sleep(eval(time))
+
+            ##Убираем мут
+            await member.remove_roles(muted_role)
+
+##Размут участника на сервере
+@bot.command()
+async def unmute(ctx, *, member: discord.Member):
+    muted_role = discord.utils.get(ctx.guild.roles, name="Mute")
+    if muted_role != None:
+        if muted_role in member.roles: ##Если у пользователя есть мутная роль
+            await member.remove_roles(muted_role)
+
+            ##Составляем Embed
+            embed = discord.Embed(colour=discord.Color.red())
+            embed.add_field(name="Что произошло?", value=f"{ctx.author.mention} размутил {member.mention}")
+
+            ##Отправляем Embed
+            await ctx.send(embed=embed)
+        else: ##Если пользователь не был в муте
+            await ctx.reply(f"{ctx.author.mention} - пользователь {member.mention} не был в муте.")
+
 
 ##Рандомное число от min до max
 @bot.command()
@@ -410,6 +473,13 @@ async def roll(ctx, min=None, max=None):
 
         result = random.randint(int(min), int(max))
         await ctx.reply(f"{ctx.author.mention}, {result}")
+
+##Вывод ссылки на сайт
+@bot.command(aliases=["сайт", "site"])
+async def get_site(ctx):
+    ##Составляем embed
+    embed = discord.Embed(title="Сайт бота", description=f"{SITE}", colour=discord.Color.red())
+    await ctx.send(embed=embed)
 
 ##Вывод новостей hoi4
 @bot.command()
