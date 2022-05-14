@@ -4,6 +4,7 @@ TOKEN = "OTcxODUxNzQ2NDMzNDUwMDY0.G5tiHi.GdAsGi7ZvDRLIoJK5c9mesB1hdw5XEsuJQu__g"
 PREFIX = "."
 LIMIT = 2000
 EMBED_LIMIT = 4050
+SITE = "https://mayakovski-site.herokuapp.com/"
 
 ##Название таблицы sqlite3
 TABLE_NAME = "game_news"

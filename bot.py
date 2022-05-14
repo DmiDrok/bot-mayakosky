@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup as BS
 import sqlite3
 from config import TABLE_NAME
 from config import SECRET_CHANNEL_TO_NEWS
+from config import SITE
 
 ##Стоп лист для произведений вида: айди: [произведение1, произведение2, произведение3, ...]
 stop_list_compositions = {}
@@ -149,7 +150,7 @@ async def info(ctx, dop=None):
         emb.add_field(name=f"{PREFIX}ban -@имя участника- [-время бана-] [-причина бана-]", value="Бан участника на сервере", inline=False)
         emb.add_field(name=f"{PREFIX}unban -@имя участника-", value="Разбан участника на сервере.", inline=False)
         emb.add_field(name=f"{PREFIX}roll -min- -max-", value="Случайное число от -min- до -max-", inline=False)
-        emb.set_footer(text="Сайт бота: https://... (В разработке).")
+        emb.set_footer(text=f"Сайт бота: {SITE}")
 
     ##Отправляем нашу информацию
     await ctx.send(embed=emb)
